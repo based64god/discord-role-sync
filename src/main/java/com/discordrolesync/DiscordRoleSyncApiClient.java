@@ -52,10 +52,21 @@ class DiscordRoleSyncApiClient
 		body.addProperty("accountHash", Long.toString(accountHash));
 		body.addProperty("displayName", displayName);
 
-		final Request request = new Request.Builder()
-			.url(base(baseUrl) + "/api/plugin/redeem")
-			.post(RequestBody.create(JSON, gson.toJson(body)))
-			.build();
+		final Request request;
+		try
+		{
+			request = new Request.Builder()
+				.url(base(baseUrl) + "/api/plugin/redeem")
+				.post(RequestBody.create(JSON, gson.toJson(body)))
+				.build();
+		}
+		catch (IllegalArgumentException e)
+		{
+			// e.g. the backend URL is blank or missing a scheme — fail with feedback instead of
+			// throwing on the caller's (client) thread.
+			cb.onResult(false, null, "Invalid backend URL: " + baseUrl);
+			return;
+		}
 
 		http.newCall(request).enqueue(new Callback()
 		{
@@ -81,6 +92,12 @@ class DiscordRoleSyncApiClient
 						&& !json.get("reportToken").isJsonNull()
 						? json.get("reportToken").getAsString()
 						: null;
+					if (token == null || token.isEmpty())
+					{
+						// 2xx but no usable token — the link did not actually complete.
+						cb.onResult(false, null, "Link failed: the server did not return a token.");
+						return;
+					}
 					cb.onResult(true, token, "Linked " + displayName);
 				}
 				catch (Exception e)
@@ -112,10 +129,19 @@ class DiscordRoleSyncApiClient
 		}
 		body.add("members", arr);
 
-		final Request request = new Request.Builder()
-			.url(base(baseUrl) + "/api/plugin/clan")
-			.post(RequestBody.create(JSON, gson.toJson(body)))
-			.build();
+		final Request request;
+		try
+		{
+			request = new Request.Builder()
+				.url(base(baseUrl) + "/api/plugin/clan")
+				.post(RequestBody.create(JSON, gson.toJson(body)))
+				.build();
+		}
+		catch (IllegalArgumentException e)
+		{
+			log.debug("Invalid backend URL, skipping clan report: {}", baseUrl);
+			return;
+		}
 
 		http.newCall(request).enqueue(new Callback()
 		{
@@ -139,8 +165,9 @@ class DiscordRoleSyncApiClient
 		});
 	}
 
-	private static String base(String url)
+	/** Normalise the configured base URL: null-safe, with any trailing slashes stripped. */
+	static String base(String url)
 	{
-		return url.replaceAll("/+$", "");
+		return url == null ? "" : url.replaceAll("/+$", "");
 	}
 }
