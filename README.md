@@ -70,3 +70,22 @@ Requires JDK 11 (it uses RuneLite's own Gradle wrapper, so no separate Gradle/Ma
 needed). Useful flags: `--branch <ref>` to pick a different RuneLite ref, `--skip-runelite` to reuse
 an already-published build, and `--no-install` to build without copying. Run with `--help` for the
 full list.
+
+## Releasing to the Plugin Hub
+
+`scripts/submit-plugin-hub.sh` automates the [plugin-hub](https://github.com/runelite/plugin-hub)
+submission flow: it branches off `runelite/plugin-hub` `master` in your fork, writes
+`plugins/discord-role-sync` (the `repository=` + `commit=` marker) pointing at the released commit,
+force-pushes the branch, and opens or updates a PR against upstream.
+
+The **Submit to Plugin Hub** GitHub Action (`.github/workflows/submit-to-plugin-hub.yml`) runs it
+automatically **whenever a tag is pushed** — the tagged commit becomes the `commit=` value. It needs
+a `PLUGIN_HUB_TOKEN` repo secret (a PAT that can push to your `plugin-hub` fork and open PRs on
+`runelite/plugin-hub`); the default `GITHUB_TOKEN` is scoped to this repo and won't work. So a
+release is just:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+You can also run the script locally (using your own `gh auth login` session) to submit by hand.

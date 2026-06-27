@@ -1,0 +1,28 @@
+name: Submit to Plugin Hub
+
+# Whenever this repo is tagged, open/update a PR on the RuneLite Plugin Hub that points the
+# plugin's marker at the tagged commit. See scripts/submit-plugin-hub.sh.
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Open/update plugin-hub PR
+        env:
+          # The default GITHUB_TOKEN is scoped to THIS repo and cannot push to your plugin-hub
+          # fork or open a PR on runelite/plugin-hub. Create a Personal Access Token (classic:
+          # `public_repo`/`repo`, or a fine-grained token with Contents+PR write on your fork and
+          # PR write on runelite/plugin-hub) and store it as the PLUGIN_HUB_TOKEN repo secret.
+          GH_TOKEN: ${{ secrets.PLUGIN_HUB_TOKEN }}
+          # GITHUB_SHA / GITHUB_REF_NAME / GITHUB_REPOSITORY are provided automatically and tell
+          # the script the tagged commit, the tag name, and this repo's slug.
+          #
+          # Optional overrides (only if your fork isn't <owner>/plugin-hub):
+          # PLUGIN_HUB_FORK: based64god/plugin-hub
+        run: bash scripts/submit-plugin-hub.sh
