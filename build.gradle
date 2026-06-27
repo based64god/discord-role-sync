@@ -1,0 +1,40 @@
+/*
+ * Discord Role Sync RuneLite plugin build. Mirrors the official runelite/example-plugin template.
+ * Gson and OkHttp are provided by the RuneLite client at runtime (injected), so they are
+ * compile-only here.
+ */
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = 'https://repo.runelite.net'
+    }
+    mavenCentral()
+}
+
+// Defaults to the latest published release. Override with -PruneLiteVersion=<version> (e.g. a
+// locally-installed -SNAPSHOT) to build against RuneLite built from source — see scripts/build-upstream.sh.
+def runeLiteVersion = project.findProperty('runeLiteVersion') ?: 'latest.release'
+
+// The RuneLite client is the only declared dependency. Everything the plugin uses (gson, okhttp,
+// guice, slf4j, jsr305) comes transitively from it — unpinned — so we always compile and run
+// against the exact versions the RuneLite client ships, with no chance of a version conflict.
+dependencies {
+    compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+    testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+}
+
+group = 'com.discordrolesync'
+version = '1.0.0'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
